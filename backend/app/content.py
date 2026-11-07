@@ -124,6 +124,30 @@ def evaluate_answer(challenge_id, action):
     finally:
         connection.close()
 
+
+def get_ai_hint(challenge_id):
+    # Connect to the database
+    connection = get_connection()
+
+    try:
+        row = connection.execute("""
+            SELECT data_json
+            FROM challenges
+            WHERE id = ?
+        """, (challenge_id,)).fetchone()
+
+        if row is None:
+            return None
+
+        challenge = json.loads(row["data_json"])
+
+        # Retrieve the predefined AI hint
+        return challenge["hints"]["ai"]["text"]
+
+    finally:
+        connection.close()
+
+
 if __name__ == "__main__":
     challenges = get_challenges()
 
