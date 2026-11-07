@@ -1,0 +1,555 @@
+/*
+ * The office. Backgrounds reference the Paper exports named in
+ * docs/assets-guide.md; until those PNGs are dropped into public/assets/ the
+ * CSS gradient underneath carries the look, so the layout is correct either
+ * way. Clock, power, integrity and all text are drawn in code so the numbers
+ * stay live (assets-guide, "Draw in code, not images").
+ */
+.office-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1440px;
+  height: 640px;
+  background-color: #1b2426;
+  background-image: url("/assets/bg-office-dark.png");
+  background-size: 1440px 640px;
+  background-repeat: no-repeat;
+}
+
+/* Drawn behind the art, and visible on its own until the art exists. */
+.office-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 10%, rgba(80, 102, 107, 0.55), transparent 60%),
+    linear-gradient(180deg, #223033 0%, #16201f 55%, #101718 100%);
+  z-index: -1;
+}
+
+.office-desk {
+  position: absolute;
+  left: 0;
+  top: 640px;
+  width: 1440px;
+  height: 260px;
+  background-color: #2a211c;
+  background-image: url("/assets/office-dark.png");
+  background-size: 1440px 260px;
+  background-repeat: no-repeat;
+}
+
+.office-desk::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Exact wood texture from the real desk (X9-0): a diagonal-grain repeat
+     over a wood base color, 6px dark top edge. */
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.05) 0px,
+      rgba(0, 0, 0, 0.05) 3px,
+      rgba(255, 255, 255, 0.03) 3px,
+      rgba(255, 255, 255, 0.03) 7px
+    )
+    0% 0% rgb(166, 124, 82);
+  border-top: 6px solid #5e4630;
+  z-index: -1;
+}
+
+/* A dim office with a vignette, darker as power runs down. */
+.office-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(130% 100% at 50% 45%, transparent 35%, rgba(5, 10, 11, 0.85) 100%);
+}
+
+/* ---- Monitor ---- */
+.monitor-bezel {
+  background: #2b2f33;
+  border: 6px solid #15181a;
+  border-radius: 22px;
+  box-shadow: var(--shadow-hard);
+}
+
+/* The recessed screen frame (V7-0): dark, a thin margin around the light
+   mail client surface, not the mail client's own background. Conflating the
+   two made every message row unreadable -- dark row text on this dark frame
+   color, see the mail-client rule below for the actual content surface. */
+.monitor-screen {
+  background: #142726;
+  border: 4px solid var(--outline);
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 4px;
+}
+
+/* The light mail client surface (230-0), sitting inside the dark frame. */
+.mail-client {
+  background: var(--mail-bg);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- HUD panels: clock, power, integrity ---- */
+.hud-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 4px solid var(--outline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: 14px 10px;
+  font-family: var(--font-ui);
+}
+
+.hud-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 108px;
+  padding: 4px 0;
+  border: 3px solid var(--outline);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.hud-badge-stacked {
+  flex-direction: column;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 17px;
+}
+
+.hud-value {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-caption {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hud-caption);
+  text-align: center;
+}
+
+/* A dark track holding 10 LED-style blocks — power and integrity. */
+.segment-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  width: 52px;
+  background: var(--outline);
+  border-radius: 10px;
+}
+
+.segment {
+  width: 44px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* The clock's progress track: a short dark bar with a small cream fill,
+   distinct from the power/integrity LED segments. */
+.clock-track {
+  width: 108px;
+  height: 16px;
+  padding: 3px;
+  background: var(--outline);
+  border-radius: 8px;
+}
+
+.clock-fill {
+  height: 10px;
+  background: var(--cream);
+  border-radius: 5px;
+  transition: width 200ms linear;
+}
+
+.threat-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--red);
+  max-width: 130px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* ---- Inbox (inside the monitor screen) ----
+   Matches the real mail client (U1-0's "Mail Client" subtree): a macOS-style
+   title bar, a search toolbar, a folder sidebar, and avatar-led message rows.
+   Game-specific additions (unread dot, outcome chip, "handled" state) are
+   mine -- the mockup is a single static inbox state. */
+.mail-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 0 12px;
+  background: var(--mail-titlebar);
+  border-bottom: 1px solid #c9d2da;
+  font-size: 12px;
+}
+
+.mail-titlebar .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.mail-titlebar .title {
+  margin-left: 8px;
+  font-family: var(--font-mail);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.mail-titlebar .time {
+  margin-left: auto;
+  font-family: var(--font-mail);
+  color: #5b6c7d;
+  font-size: 11px;
+}
+
+.mail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px;
+  flex-shrink: 0;
+  padding: 0 14px;
+  background: var(--mail-toolbar);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.mail-search {
+  width: 220px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: #e6ebf0;
+  color: #7c8b99;
+  font-family: var(--font-mail);
+  font-size: 12px;
+}
+
+.mail-unread-badge {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--blue-deep);
+  color: var(--header-fg);
+  font-family: var(--font-mail);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mail-banner {
+  background: var(--mail-banner-bg);
+  color: var(--mail-banner-ink);
+  padding: 6px 14px;
+  font-family: var(--font-mail);
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid #ead98a;
+}
+
+.mail-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.mail-sidebar {
+  width: 110px;
+  flex: 0 0 110px;
+  background: var(--mail-sidebar);
+  border-right: 1px solid var(--hairline);
+  padding: 12px 8px;
+}
+
+.mail-sidebar .compose {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 26px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  background: var(--blue-deep);
+  color: var(--header-fg);
+  font-family: var(--font-mail);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mail-sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mail-sidebar li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-family: var(--font-mail);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.mail-sidebar li[aria-current="true"] {
+  background: #cfddec;
+  color: var(--blue-deep);
+  font-weight: 700;
+}
+
+.mail-sidebar li[aria-current="true"] .count {
+  color: #2f7dd1;
+  font-weight: 700;
+}
+
+.mail-list {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.mail-row {
+  display: grid;
+  grid-template-columns: 32px 150px 1fr 60px 64px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+  font-family: var(--font-mail);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.mail-row:hover {
+  background: #eef3f8;
+}
+
+.mail-row.is-unread .mail-subject {
+  font-weight: 700;
+}
+
+.mail-row.is-handled {
+  color: #6b7b8b;
+}
+
+.mail-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-mail);
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mail-unread-dot);
+}
+
+.mail-sender {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.mail-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mail-outcome {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mail-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: right;
+  color: #5b6c7d;
+}
+
+.mail-empty {
+  padding: 24px;
+  text-align: center;
+  color: #6b7b8b;
+  font-family: var(--font-mail);
+  font-size: 13px;
+}
+
+.outcome-chip {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 2px solid var(--outline);
+}
+
+.outcome-full {
+  background: var(--green);
+  color: #0d1a12;
+}
+
+.outcome-reduced {
+  background: var(--red);
+  color: #fff;
+}
+
+/* ---- Control buttons on the desk ---- */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 300px;
+}
+
+.control-button {
+  background: var(--panel);
+  color: var(--cream);
+  border: 4px solid var(--outline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard-sm);
+  padding: 12px 14px;
+  font-size: 16px;
+  text-align: left;
+}
+
+.control-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--outline);
+}
+
+.control-button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.spinner-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner-label {
+  font-size: 13px;
+  color: var(--purple);
+}
+
+/* ---- Loading / title ---- */
+.centered-card {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.title-card {
+  background: var(--panel);
+  border: 5px solid var(--outline);
+  border-radius: 16px;
+  box-shadow: 6px 6px 0 var(--outline);
+  padding: 40px 56px;
+  max-width: 760px;
+}
+
+.title-card h1 {
+  font-size: 56px;
+  margin: 0 0 8px;
+  letter-spacing: 0.04em;
+}
+
+.title-card p.tagline {
+  margin: 0 0 6px;
+  color: var(--cream-dim);
+  font-size: 18px;
+}
+
+.title-card p.note {
+  margin: 18px auto 24px;
+  max-width: 560px;
+  font-family: var(--font-mail);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--cream-dim);
+}
+
+.mode-grid {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.mode-button {
+  flex: 1;
+  background: var(--blue);
+  color: var(--cream);
+  border: 4px solid var(--outline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-hard);
+  padding: 16px;
+  font-size: 20px;
+}
+
+.mode-button.secondary {
+  background: var(--blue-deep);
+}
+
+.mode-button small {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-mail);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--cream-dim);
+}
+
+.mode-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--outline);
+}
