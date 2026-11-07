@@ -2,12 +2,21 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { EMAILS_PER_NIGHT } from "../balance";
 import { getChallenges, postAnswer, postExplain, postHint } from "./client";
+import { mockAnswer, mockChallenges, mockHint } from "./mock";
 import type { Action, AIReply, Mode } from "../types";
 
 /**
  * Tonight's emails. The store owns the selected draw once play starts, so the
  * query can be discarded when this screen unmounts and a replay gets a new draw.
  * `enabled` keeps it from firing until a mode is actually chosen.
+ *
+ * Falls back to local mock data (api/mock.ts) when the real backend call
+ * fails, so the frontend stays playable while the backend -- a teammate's
+ * separate, still-in-progress work -- isn't up yet. This lives here rather
+ * than in api/client.ts on purpose: client.ts's job is to report the real
+ * server's response (including its errors) faithfully, which
+ * api/client.test.ts depends on; the fallback belongs at this UI-facing
+ * layer, the same place useExplain already falls back for AI failures.
  */
 export function useChallenges(
   night: number,
@@ -17,7 +26,14 @@ export function useChallenges(
 ) {
   return useQuery({
     queryKey: ["challenges", night, mode, seed ?? ""],
-    queryFn: () => getChallenges(night, mode, EMAILS_PER_NIGHT, seed),
+    queryFn: async () => {
+      try {
+        return await getChallenges(night, mode, EMAILS_PER_NIGHT, seed);
+      } catch (error) {
+        console.warn("[api] /api/challenges unavailable; using local mock data.", error);
+        return mockChallenges(night, mode);
+      }
+    },
     enabled,
     staleTime: Infinity,
     gcTime: 0,
@@ -28,20 +44,33 @@ export function useChallenges(
 
 export function useHint() {
   return useMutation({
-    mutationFn: (vars: { runId: string; challengeId: string }) =>
-      postHint(vars.runId, vars.challengeId),
+    mutationFn: async (vars: { runId: string; challengeId: string }) => {
+      try {
+        return await postHint(vars.runId, vars.challengeId);
+      } catch (error) {
+        console.warn("[api] /api/hint unavailable; using local mock data.", error);
+        return mockHint(vars.challengeId);
+      }
+    },
     retry: false,
   });
 }
 
 export function useAnswer() {
   return useMutation({
-    mutationFn: (vars: {
+    mutationFn: async (vars: {
       runId: string;
       challengeId: string;
       action: Action;
       hintUsed: boolean;
-    }) => postAnswer(vars.runId, vars.challengeId, vars.action, vars.hintUsed),
+    }) => {
+      try {
+        return await postAnswer(vars.runId, vars.challengeId, vars.action, vars.hintUsed);
+      } catch (error) {
+        console.warn("[api] /api/answer unavailable; using local mock data.", error);
+        return mockAnswer(vars.challengeId, vars.action);
+      }
+    },
     retry: false,
   });
 }

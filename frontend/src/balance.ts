@@ -43,6 +43,39 @@ export const THREAT_INTEGRITY_PER_GAME_MINUTE = 1 / 15;
  */
 export const MAX_FRAME_SECONDS = 0.1;
 
+/**
+ * The Faceless Figure (docs/game-design.md sections 3 and 7): a slow enemy
+ * that walks the corridor toward the cubicle. Watching the camera slows it,
+ * a closed door stops it, and both cost power -- the same budget as the
+ * A.E.G.I.S. hint, which is the "meaningful resource decisions" pillar.
+ */
+
+/** Power lost per game minute just from keeping the lights on, before the
+ * door or cameras draw anything extra. */
+export const PASSIVE_POWER_DRAIN_PER_GAME_MINUTE = 0.05;
+/** Extra drain while the door is held closed. */
+export const DOOR_CLOSED_POWER_DRAIN_PER_GAME_MINUTE = 0.4;
+/** Extra drain while watching the corridor camera. */
+export const CAMERA_POWER_DRAIN_PER_GAME_MINUTE = 0.25;
+
+/** Game minute of the shift the figure first appears. */
+export const ENEMY_FIRST_SPAWN_GAME_MINUTES = 25;
+/** How long it waits, once driven off, before trying again. */
+export const ENEMY_SPAWN_COOLDOWN_GAME_MINUTES = 70;
+/** 0 (out of sight) to 1 (at the cubicle) per game minute, door open, unwatched. */
+export const ENEMY_ADVANCE_PER_GAME_MINUTE = 1 / 40;
+/** Multiplies the advance rate while the player is watching its corridor on camera. */
+export const ENEMY_WATCHED_SLOWDOWN = 0.4;
+/** Multiplies the advance rate during a blackout -- "breaches become much likelier". */
+export const ENEMY_BLACKOUT_SPEEDUP = 2.5;
+/** How fast it withdraws after an encounter, countered or not. */
+export const ENEMY_RETREAT_PER_GAME_MINUTE = 1 / 10;
+/** Integrity lost when it reaches the workstation and the door did not hold
+ * (docs/game-design.md section 3, "Example integrity changes"). */
+export const ENEMY_ARRIVAL_INTEGRITY_LOSS = 40;
+/** How long an encounter banner stays on screen. */
+export const ALERT_DURATION_GAME_MINUTES = 6;
+
 export type ModeBalance = {
   /** How long the whole night takes in real minutes. */
   nightLengthRealMinutes: number;

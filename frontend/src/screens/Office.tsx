@@ -1,7 +1,11 @@
+import { AlertBanner } from "../components/AlertBanner";
+import { BlackoutOverlay } from "../components/BlackoutOverlay";
+import { CameraPanel } from "../components/CameraPanel";
 import { At } from "../components/Stage";
 import { ClockPanel } from "../components/ClockPanel";
 import { Desk } from "../components/Desk";
 import { EmailModal } from "../components/EmailModal";
+import { SecurityControls } from "../components/SecurityControls";
 import { IntegrityPanel, PowerPanel } from "../components/StatBar";
 import { selectClockMinute, selectIntegrity, selectPower, useGame } from "../store/game";
 
@@ -17,6 +21,7 @@ export function Office() {
   const handledCount = useGame((s) => s.results.length);
   const activeThreats = useGame((s) => s.activeThreats.length);
   const endNight = useGame((s) => s.endNight);
+  const cameraActive = useGame((s) => s.cameraActive);
 
   // Whole units only, so the HUD re-renders about once a second rather than
   // on all sixty frames.
@@ -33,6 +38,7 @@ export function Office() {
       <div className="office-bg" />
       <div className="office-desk" />
       <div className="office-vignette" />
+      <BlackoutOverlay />
 
       <At x={18} y={92}>
         <ClockPanel clock={clock} />
@@ -55,6 +61,7 @@ export function Office() {
         <p style={{ margin: 0, fontSize: 13, color: "var(--cream-dim)" }}>
           {handledCount} of {pack.length} messages handled
         </p>
+        <SecurityControls />
         <button
           type="button"
           className="control-button"
@@ -68,6 +75,14 @@ export function Office() {
           </span>
         </button>
       </At>
+
+      {cameraActive && (
+        <At x={174} y={104} width={1080} height={540} className="camera-overlay">
+          <CameraPanel />
+        </At>
+      )}
+
+      <AlertBanner />
 
       {openChallenge && <EmailModal challenge={openChallenge} />}
     </>

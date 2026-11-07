@@ -9,11 +9,22 @@
 import { create } from "zustand";
 
 import {
+  ALERT_DURATION_GAME_MINUTES,
   ARRIVAL_SCHEDULE_GAME_MINUTES,
   BALANCE,
+  CAMERA_POWER_DRAIN_PER_GAME_MINUTE,
+  DOOR_CLOSED_POWER_DRAIN_PER_GAME_MINUTE,
+  ENEMY_ADVANCE_PER_GAME_MINUTE,
+  ENEMY_ARRIVAL_INTEGRITY_LOSS,
+  ENEMY_BLACKOUT_SPEEDUP,
+  ENEMY_FIRST_SPAWN_GAME_MINUTES,
+  ENEMY_RETREAT_PER_GAME_MINUTE,
+  ENEMY_SPAWN_COOLDOWN_GAME_MINUTES,
+  ENEMY_WATCHED_SLOWDOWN,
   INTEGRITY_MAX,
   INTEGRITY_MIN,
   NIGHT_LENGTH_GAME_MINUTES,
+  PASSIVE_POWER_DRAIN_PER_GAME_MINUTE,
   POWER_MAX,
   POWER_MIN,
   THREAT_INTEGRITY_PER_GAME_MINUTE,
@@ -45,6 +56,25 @@ export type ActiveThreat = {
   /** Game minute the threat was left active. */
   since: number;
 };
+
+/**
+ * The Faceless Figure (docs/game-design.md sections 3 and 7). It sits
+ * offscreen ("waiting"), walks the corridor toward the cubicle
+ * ("approaching", progress 0 -> 1), then withdraws ("retreating",
+ * progress 1 -> 0) whether the door held or not.
+ */
+export type EnemyPhase = "waiting" | "approaching" | "retreating";
+
+export type Enemy = {
+  phase: EnemyPhase;
+  /** 0 = out of sight, 1 = at the cubicle. Only moves outside "waiting". */
+  progress: number;
+  /** Game minute of the next spawn. Only meaningful while "waiting". */
+  nextSpawnAt: number;
+};
+
+/** A short banner for an encounter outcome -- cleared once `clock` passes `until`. */
+export type Alert = { message: string; tone: "danger" | "safe"; until: number };
 
 type GameState = {
   screen: Screen;
@@ -81,6 +111,13 @@ type GameState = {
   clock: number;
   activeThreats: ActiveThreat[];
 
+  /** Held closed, it blocks the Faceless Figure's arrival but drains power. */
+  doorClosed: boolean;
+  /** Watching the corridor camera slows the figure but also drains power. */
+  cameraActive: boolean;
+  enemy: Enemy;
+  alert: Alert | null;
+
   ending: NightEnding | null;
 
   // --- actions ---
@@ -92,10 +129,17 @@ type GameState = {
   canAffordHint: () => boolean;
   applyAnswer: (challenge: PublicChallenge, action: Action, result: AnswerResult) => void;
   setExplanation: (challengeId: string, reply: AIReply) => void;
+  /** No-ops during a blackout: a powered defense that has failed can't be toggled back on. */
+  toggleDoor: () => void;
+  toggleCamera: () => void;
   endNight: (ending: NightEnding) => void;
   backToTitle: () => void;
   tick: (dt: number) => void;
 };
+
+function freshEnemy(): Enemy {
+  return { phase: "waiting", progress: 0, nextSpawnAt: ENEMY_FIRST_SPAWN_GAME_MINUTES };
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -132,6 +176,11 @@ export const useGame = create<GameState>((set, get) => ({
   clock: 0,
   activeThreats: [],
 
+  doorClosed: false,
+  cameraActive: false,
+  enemy: freshEnemy(),
+  alert: null,
+
   ending: null,
 
   startNight: (mode, challenges) => {
@@ -163,6 +212,10 @@ export const useGame = create<GameState>((set, get) => ({
       power: balance.startingPower,
       clock: 0,
       activeThreats: [],
+      doorClosed: false,
+      cameraActive: false,
+      enemy: freshEnemy(),
+      alert: null,
       ending: null,
     });
   },
@@ -222,6 +275,18 @@ export const useGame = create<GameState>((set, get) => ({
   setExplanation: (challengeId, reply) =>
     set((state) => ({ explanations: { ...state.explanations, [challengeId]: reply } })),
 
+  toggleDoor: () => {
+    const state = get();
+    if (state.power <= POWER_MIN) return;
+    set({ doorClosed: !state.doorClosed });
+  },
+
+  toggleCamera: () => {
+    const state = get();
+    if (state.power <= POWER_MIN) return;
+    set({ cameraActive: !state.cameraActive });
+  },
+
   endNight: (ending) => set({ ending, screen: "results", modal: null }),
 
   backToTitle: () =>
@@ -238,6 +303,10 @@ export const useGame = create<GameState>((set, get) => ({
       hints: {},
       explanations: {},
       activeThreats: [],
+      doorClosed: false,
+      cameraActive: false,
+      enemy: freshEnemy(),
+      alert: null,
       clock: 0,
     }),
 
@@ -263,7 +332,60 @@ export const useGame = create<GameState>((set, get) => ({
     // a fraction per frame so it is smooth rather than stepping once a minute.
     const drain =
       state.activeThreats.length * THREAT_INTEGRITY_PER_GAME_MINUTE * elapsedGameMinutes;
-    const integrity = clamp(state.integrity - drain, INTEGRITY_MIN, INTEGRITY_MAX);
+    let integrity = clamp(state.integrity - drain, INTEGRITY_MIN, INTEGRITY_MAX);
+
+    // Power fails before it can go negative. At 0 it's a blackout: cameras,
+    // AI help and the door all fail (docs/game-design.md section 3).
+    const blackout = state.power <= POWER_MIN;
+    let powerDrainPerMinute = PASSIVE_POWER_DRAIN_PER_GAME_MINUTE;
+    if (state.doorClosed && !blackout) powerDrainPerMinute += DOOR_CLOSED_POWER_DRAIN_PER_GAME_MINUTE;
+    if (state.cameraActive && !blackout) powerDrainPerMinute += CAMERA_POWER_DRAIN_PER_GAME_MINUTE;
+    const power = clamp(state.power - powerDrainPerMinute * elapsedGameMinutes, POWER_MIN, POWER_MAX);
+
+    // The Faceless Figure: waits off camera, walks the corridor, then either
+    // breaches (door open or blackout) or is countered (door closed), and
+    // withdraws either way to try again later.
+    let enemy = state.enemy;
+    let alert = state.alert;
+
+    if (enemy.phase === "waiting" && clock >= enemy.nextSpawnAt) {
+      enemy = { ...enemy, phase: "approaching", progress: 0 };
+    }
+
+    if (enemy.phase === "approaching") {
+      const watched = state.cameraActive && !blackout;
+      const speedMultiplier = blackout ? ENEMY_BLACKOUT_SPEEDUP : watched ? ENEMY_WATCHED_SLOWDOWN : 1;
+      const progress = enemy.progress + ENEMY_ADVANCE_PER_GAME_MINUTE * speedMultiplier * elapsedGameMinutes;
+
+      if (progress >= 1) {
+        const countered = state.doorClosed && !blackout;
+        if (countered) {
+          alert = {
+            message: "The closed door held. The figure withdrew.",
+            tone: "safe",
+            until: clock + ALERT_DURATION_GAME_MINUTES,
+          };
+        } else {
+          integrity = clamp(integrity - ENEMY_ARRIVAL_INTEGRITY_LOSS, INTEGRITY_MIN, INTEGRITY_MAX);
+          alert = {
+            message: "A faceless figure reached the workstation.",
+            tone: "danger",
+            until: clock + ALERT_DURATION_GAME_MINUTES,
+          };
+        }
+        enemy = { ...enemy, phase: "retreating", progress: 1 };
+      } else {
+        enemy = { ...enemy, progress };
+      }
+    } else if (enemy.phase === "retreating") {
+      const progress = enemy.progress - ENEMY_RETREAT_PER_GAME_MINUTE * elapsedGameMinutes;
+      enemy =
+        progress <= 0
+          ? { phase: "waiting", progress: 0, nextSpawnAt: clock + ENEMY_SPAWN_COOLDOWN_GAME_MINUTES }
+          : { ...enemy, progress };
+    }
+
+    if (alert && clock >= alert.until) alert = null;
 
     const everyEmailHandled =
       state.pack.length > 0 && state.results.length >= state.pack.length;
@@ -281,6 +403,9 @@ export const useGame = create<GameState>((set, get) => ({
       current,
       queue: stillQueued,
       integrity,
+      power,
+      enemy,
+      alert,
       ...(ending ? { ending, screen: "results" as Screen, modal: null } : {}),
     });
   },
@@ -292,6 +417,8 @@ export const useGame = create<GameState>((set, get) => ({
 export const selectClockMinute = (state: GameState) => Math.floor(state.clock);
 export const selectIntegrity = (state: GameState) => Math.round(state.integrity);
 export const selectPower = (state: GameState) => Math.round(state.power);
+/** True at 0 power: cameras, A.E.G.I.S. and the door all fail. */
+export const selectBlackout = (state: GameState) => state.power <= POWER_MIN;
 
 /** Every objective touched tonight, de-duplicated, for the results screen. */
 export function collectObjectives(results: HandledEmail[]): Objective[] {
