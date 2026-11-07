@@ -13,6 +13,12 @@ A first-person cybersecurity survival-horror game with cards and a timer. You wo
 | AI | OpenAI model through LangChain (chain for explanations, agent for chat) |
 | Dev setup | Docker Compose, plus a Python venv for the backend |
 
+## AI tools used in development
+
+- Pi Agent
+- Claude
+- Paper
+
 ## Read these in order
 
 1. `docs/game-design.md` – what the game is and why
