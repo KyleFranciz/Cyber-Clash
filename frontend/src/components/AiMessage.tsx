@@ -12,7 +12,13 @@ import type { AIReply } from "../types";
  *   text     -> the message, with [P1] ids as numbered chips and the sources
  *               the server attached listed underneath.
  */
-export function AiMessage({ pending, reply }: { pending: boolean; reply?: AIReply }) {
+export function AiMessage({
+  pending,
+  reply,
+}: {
+  pending: boolean;
+  reply?: AIReply;
+}) {
   if (pending) {
     return (
       <div className="ai-message">
@@ -29,7 +35,11 @@ export function AiMessage({ pending, reply }: { pending: boolean; reply?: AIRepl
   // Only the sources actually cited in this message, numbered to match chips.
   const cited = new Map<string, number>();
   for (const piece of pieces) {
-    if (piece.kind === "citation" && piece.source && !cited.has(piece.source.id)) {
+    if (
+      piece.kind === "citation" &&
+      piece.source &&
+      !cited.has(piece.source.id)
+    ) {
       cited.set(piece.source.id, piece.number);
     }
   }

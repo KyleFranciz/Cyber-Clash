@@ -1,12 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { EMAILS_PER_NIGHT } from "../balance";
-import { getChallenges, getHealth, postAnswer, postExplain, postHint } from "./client";
+import { getChallenges, postAnswer, postExplain, postHint } from "./client";
 import type { Action, AIReply, Mode } from "../types";
 
 /**
- * Tonight's emails. A night's draw must never refetch mid-play, or the inbox
- * would change underfoot, so it is cached forever and never revalidated.
+ * Tonight's emails. The store owns the selected draw once play starts, so the
+ * query can be discarded when this screen unmounts and a replay gets a new draw.
  * `enabled` keeps it from firing until a mode is actually chosen.
  */
 export function useChallenges(
@@ -20,18 +20,9 @@ export function useChallenges(
     queryFn: () => getChallenges(night, mode, EMAILS_PER_NIGHT, seed),
     enabled,
     staleTime: Infinity,
-    gcTime: Infinity,
+    gcTime: 0,
     refetchOnWindowFocus: false,
     retry: 1,
-  });
-}
-
-export function useHealth() {
-  return useQuery({
-    queryKey: ["health"],
-    queryFn: getHealth,
-    staleTime: 60_000,
-    retry: false,
   });
 }
 
