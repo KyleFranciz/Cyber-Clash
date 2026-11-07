@@ -1,0 +1,197 @@
+{
+  "schema_version": "1.0",
+  "pack_id": "night1-phishing-basics",
+  "night": 1,
+  "learning_objectives": [
+    { "id": "LO1", "text": "Name at least three evidence-based phishing indicators." },
+    { "id": "LO2", "text": "Choose an appropriate response: report, verify through a separate channel, or take no action." },
+    { "id": "LO3", "text": "Recognize that a legitimate message can look urgent, and that one indicator alone is not proof." }
+  ],
+  "challenges": [
+    {
+      "id": "N1-EM-001",
+      "type": "email_analysis",
+      "objective_ids": ["LO1", "LO2"],
+      "is_malicious": true,
+      "tier": 1,
+      "email": {
+        "from_name": "IT Helpdesk",
+        "from_address": "helpdesk@brightfie1d-support.example",
+        "reply_to": "",
+        "subject": "URGENT: Password expires in 1 hour",
+        "body": "Hello,\n\nYour Brightfield network password expires in 1 hour. To avoid losing access to your account, confirm your password now using the link below.\n\nConfirm password: https://sso.brightfield.example/reset\n\nIT Helpdesk",
+        "links": [
+          {
+            "display_text": "https://sso.brightfield.example/reset",
+            "actual_url": "https://brightfield-sso.example/reset"
+          }
+        ],
+        "attachments": []
+      },
+      "clues": [
+        {
+          "id": "C1",
+          "field": "sender",
+          "span": "brightfie1d-support.example",
+          "kind": "red_flag",
+          "explanation": "The sender's domain is not the company's real domain (brightfield.example). The letter l has been swapped for the digit 1."
+        },
+        {
+          "id": "C2",
+          "field": "subject",
+          "span": "URGENT",
+          "kind": "red_flag",
+          "explanation": "Urgent wording pressures you to act before you have time to check."
+        },
+        {
+          "id": "C3",
+          "field": "body",
+          "span": "confirm your password now",
+          "kind": "red_flag",
+          "explanation": "Asking you to enter your password through an emailed link is a common credential-theft pattern."
+        },
+        {
+          "id": "C4",
+          "field": "link",
+          "span": "brightfield-sso.example",
+          "kind": "red_flag",
+          "explanation": "The text of the link shows one address, but the link actually goes to a different one. Check where a link really goes before you click."
+        }
+      ],
+      "best_action": "report",
+      "acceptable_actions": ["report", "verify_separately"],
+      "action_feedback": {
+        "report": "Correct. Several independent clues point to phishing, and reporting lets the security team warn others.",
+        "verify_separately": "A safe choice. Contacting IT through a channel you already know (not the email) confirms the message. Reporting it as well helps protect coworkers.",
+        "no_action": "Not clicking protects you, but others may still receive this message. Reporting lets the security team act on it."
+      },
+      "action_outcome": {
+        "report": "full",
+        "verify_separately": "full",
+        "no_action": "reduced"
+      },
+      "hints": {
+        "basic": "Look closely at the sender's domain and at where the link really goes.",
+        "ai": {
+          "text": "The sender's domain looks slightly different from the company's usual one. Check it carefully.",
+          "ai_verdict": "phishing",
+          "stated_confidence": 0.9,
+          "ai_is_correct": true
+        }
+      },
+      "tags": ["lookalike-domain", "urgency", "credential-request", "link-mismatch"],
+      "sources": [
+        {
+          "title": "Recognize and Report Phishing",
+          "publisher": "CISA",
+          "url": "https://www.cisa.gov/secure-our-world/recognize-and-report-phishing",
+          "accessed": "2026-11-06",
+          "supports": ["C1", "C2", "C3", "C4"]
+        },
+        {
+          "title": "Phishing Guidance: Stopping the Attack Cycle at Phase One",
+          "publisher": "CISA, NSA, FBI, MS-ISAC",
+          "url": "https://cisa.gov/resources-tools/resources/phishing-guidance-stopping-attack-cycle-phase-one",
+          "accessed": "2026-11-06",
+          "supports": ["C3"]
+        }
+      ],
+      "review": {
+        "status": "draft",
+        "reviewer": "",
+        "reviewed_date": "",
+        "next_review_due": "2027-05-06"
+      }
+    },
+    {
+      "id": "N1-EM-002",
+      "type": "email_analysis",
+      "objective_ids": ["LO2", "LO3"],
+      "is_malicious": false,
+      "tier": 2,
+      "email": {
+        "from_name": "Facilities Team",
+        "from_address": "facilities@brightfield.example",
+        "reply_to": "",
+        "subject": "Scheduled badge reader maintenance tonight",
+        "body": "Hi all,\n\nThe badge readers on floors 2 and 3 will be offline from 11 PM to 1 AM tonight for scheduled maintenance. Use the side entrance during this window.\n\nNo action is needed on your part. Questions? Reach the Facilities desk at the number on the intranet.\n\nFacilities Team",
+        "links": [],
+        "attachments": []
+      },
+      "clues": [
+        {
+          "id": "L1",
+          "field": "sender",
+          "span": "facilities@brightfield.example",
+          "kind": "legit_signal",
+          "explanation": "The sender's domain matches the company's real domain."
+        },
+        {
+          "id": "L2",
+          "field": "body",
+          "span": "No action is needed",
+          "kind": "legit_signal",
+          "explanation": "The message does not ask for a password, payment, or click."
+        },
+        {
+          "id": "L3",
+          "field": "body",
+          "span": "the number on the intranet",
+          "kind": "legit_signal",
+          "explanation": "It points you to a channel you already know instead of a link or phone number inside the email."
+        },
+        {
+          "id": "L4",
+          "field": "subject",
+          "span": "tonight",
+          "kind": "benign_oddity",
+          "explanation": "The message is time-sensitive, but it only gives information. It does not pressure you to act or hand over anything."
+        }
+      ],
+      "best_action": "no_action",
+      "acceptable_actions": ["no_action", "verify_separately"],
+      "action_feedback": {
+        "report": "This message looks legitimate: the sender's domain matches and it asks for nothing. Reporting real messages creates extra work for the security team, though checking when unsure is a good habit.",
+        "verify_separately": "Reasonable if you were unsure. Here the clues all point to a genuine notice, so no further action was needed.",
+        "no_action": "Correct. The domain matches, nothing is requested, and it points to a known internal channel. Time-sensitive does not mean malicious."
+      },
+      "action_outcome": {
+        "report": "reduced",
+        "verify_separately": "full",
+        "no_action": "full"
+      },
+      "hints": {
+        "basic": "Ask what the message wants you to do, and check whether the sender's domain matches the company's.",
+        "ai": {
+          "text": "Nothing here asks you to click or share information, though the timing is worth noting.",
+          "ai_verdict": "legitimate",
+          "stated_confidence": 0.7,
+          "ai_is_correct": true
+        }
+      },
+      "tags": ["legitimate", "benign-urgency", "no-request"],
+      "sources": [
+        {
+          "title": "Recognize and Report Phishing",
+          "publisher": "CISA",
+          "url": "https://www.cisa.gov/secure-our-world/recognize-and-report-phishing",
+          "accessed": "2026-11-06",
+          "supports": ["L1", "L2", "L3", "L4"]
+        },
+        {
+          "title": "Phishing Guidance: Stopping the Attack Cycle at Phase One",
+          "publisher": "CISA, NSA, FBI, MS-ISAC",
+          "url": "https://cisa.gov/resources-tools/resources/phishing-guidance-stopping-attack-cycle-phase-one",
+          "accessed": "2026-11-06",
+          "supports": ["L2"]
+        }
+      ],
+      "review": {
+        "status": "draft",
+        "reviewer": "",
+        "reviewed_date": "",
+        "next_review_due": "2027-05-06"
+      }
+    }
+  ]
+}
