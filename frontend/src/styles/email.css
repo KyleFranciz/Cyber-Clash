@@ -1,0 +1,657 @@
+/*
+ * The inspect modal. Pulled from the real design (Paper file
+ * 01K4XVGQHJKESN857335275T69, artboard 10X-0 "Balatro — Modal Open",
+ * "Inspect Modal" subtree) via get_jsx/get_computed_styles: a clean white
+ * card, a navy header bar, Inter body type and IBM Plex Mono addresses --
+ * "so the email looks like a real mail program" (docs/game-design.md
+ * section 9). This is a different visual language from the chunky HUD on
+ * purpose; only office.css's panels use the Pixelify Sans game-UI treatment.
+ *
+ * Two deliberate departures from the mockup:
+ *  - Sender/reply-to addresses stay a neutral color before the decision.
+ *    The mockup pre-colors the phishing address red, which would leak the
+ *    verdict before the player acts -- the spoiler rule in
+ *    docs/api-contract.md forbids that. Color only arrives through the clue
+ *    highlight system, after /api/answer returns.
+ *  - The mockup has no feedback/explanation state (it only shows the
+ *    pre-decision modal) and no free "basic hint" block, so those reuse this
+ *    file's palette and type scale rather than a pixel source.
+ */
+.modal-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 10, 11, 0.76);
+  display: grid;
+  place-items: center;
+  z-index: 10;
+}
+
+.email-modal {
+  width: 640px;
+  max-height: 820px;
+  display: flex;
+  flex-direction: column;
+  background: var(--modal-bg);
+  color: var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--modal-shadow);
+  font-family: var(--font-mail);
+  overflow: hidden;
+}
+
+.email-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 24px;
+  background: var(--blue-deep);
+}
+
+.email-head-title {
+  color: var(--header-fg);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.email-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--header-fg);
+}
+
+.email-close[disabled] {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.email-fields {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 32px 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.email-field-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.email-field-label {
+  flex-shrink: 0;
+  width: 56px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.email-field-value {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.email-from-name {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.email-from-address {
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.email-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.email-body-block {
+  padding: 24px 32px 6px;
+}
+
+.email-subject {
+  margin: 0;
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 34px;
+}
+
+.email-body {
+  margin: 0;
+  padding-top: 14px;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 24px;
+  white-space: pre-wrap;
+}
+
+.email-action-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 32px 18px;
+}
+
+/* The yellow LINK GOES TO strip: shows where each link really points. */
+.link-strip {
+  background: var(--yellow);
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.link-row {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 16px;
+  word-break: break-all;
+}
+
+.link-row .label {
+  display: inline-block;
+  min-width: 90px;
+  margin-right: 6px;
+  color: var(--ink);
+  font-family: var(--font-mail);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.link-row + .link-row {
+  padding-top: 8px;
+  border-top: 1px solid rgba(27, 42, 58, 0.15);
+}
+
+.link-mismatch {
+  margin: 0;
+  font-family: var(--font-mail);
+  font-size: 12px;
+  font-weight: 600;
+  color: #7a4a00;
+}
+
+.attachment-strip {
+  background: var(--decision-bg);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.attachment-strip h3 {
+  margin: 0 0 8px;
+  color: var(--ink-muted);
+  font-family: var(--font-mail);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.attachment-row {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  word-break: break-all;
+}
+
+/* ---- Hints ---- */
+.hint-basic {
+  margin: 0 32px 14px;
+  padding: 10px 14px;
+  background: var(--decision-bg);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.hint-basic strong {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* The A.E.G.I.S. hint box, pulled from 10X-0's "AEGIS Hint" node. */
+.hint-ai {
+  margin: 0 32px 20px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--hint-purple-bg);
+  border: 1px solid var(--hint-purple-border);
+  border-radius: 8px;
+}
+
+.hint-ai-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hint-ai-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hint-ai-badge {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--hint-purple);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hint-ai-cost {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--hint-cyan-bg);
+  color: var(--hint-cyan-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hint-ai-confidence {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hint-ai-confidence-label {
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hint-ai-meter {
+  width: 64px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--hint-purple-border);
+  flex-shrink: 0;
+}
+
+.hint-ai-meter-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--hint-purple);
+}
+
+.hint-ai-text {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.hint-button {
+  margin: 0 32px 20px;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--hint-purple);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.hint-button[disabled] {
+  background: #b9aed6;
+  cursor: not-allowed;
+}
+
+/* ---- Decision bar ---- */
+.decision-bar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 32px;
+  background: var(--decision-bg);
+}
+
+.decision-prompt {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.decision-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  flex: 1;
+  height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  font-family: var(--font-mail);
+}
+
+.action-button strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.action-button small {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.action-leave {
+  background: transparent;
+  border-color: var(--blue-deep);
+  color: var(--blue-deep);
+}
+
+.action-leave small {
+  color: var(--ink-faint);
+}
+
+.action-verify {
+  background: var(--blue);
+  color: #fff;
+}
+
+.action-verify small {
+  color: #d6e6f7;
+}
+
+.action-report {
+  background: var(--red);
+  color: #fff;
+}
+
+.action-report small {
+  color: #fbe0e0;
+}
+
+.action-button:active:not([disabled]) {
+  filter: brightness(0.96);
+}
+
+.action-button[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* ---- Clue highlights ---- */
+.clue {
+  position: relative;
+  border-radius: 3px;
+  padding: 0 2px;
+  border-bottom: 3px solid currentColor;
+}
+
+.clue-red_flag {
+  background: #f8d2d2;
+  color: #8a2b2b;
+}
+.clue-legit_signal {
+  background: #cfe9d8;
+  color: #23613c;
+}
+.clue-benign_oddity {
+  background: #fdeec2;
+  color: #7a5c13;
+}
+
+.clue-mark {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: super;
+  margin-left: 2px;
+  padding: 0 3px;
+  border-radius: 3px;
+  color: #fff;
+}
+
+/*
+ * `background: currentColor` here would resolve to this rule's OWN `color`
+ * (white) rather than the parent `.clue`'s kind color -- a self-referential
+ * mistake that made every badge a white box on white text. Each kind's
+ * background is spelled out instead, matching `.clue-<kind>`'s `color`.
+ */
+.clue-red_flag .clue-mark {
+  background: #8a2b2b;
+}
+.clue-legit_signal .clue-mark {
+  background: #23613c;
+}
+.clue-benign_oddity .clue-mark {
+  background: #7a5c13;
+}
+
+/* ---- Feedback ---- */
+.feedback-card {
+  margin: 0 32px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.feedback-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+}
+
+.feedback-full {
+  background: var(--accent-integrity);
+  color: #0d1a12;
+}
+.feedback-reduced {
+  background: var(--red);
+  color: #fff;
+}
+
+.feedback-head h3 {
+  margin: 0;
+  font-family: var(--font-mail);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.feedback-head .best {
+  font-family: var(--font-mail);
+  font-size: 12px;
+}
+
+.feedback-text {
+  margin: 0;
+  padding: 14px 16px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.clue-list {
+  margin: 0;
+  padding: 12px 16px 14px;
+  list-style: none;
+  border-top: 1px solid var(--hairline);
+}
+
+.clue-list li {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.clue-list li + li {
+  margin-top: 10px;
+}
+
+.clue-list .num {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 6px;
+  height: 22px;
+  line-height: 22px;
+}
+
+.clue-list .kind {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.clue-list .quote {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* ---- A.E.G.I.S. explanation ---- */
+.ai-message {
+  margin: 0 32px 20px;
+  padding: 12px 14px;
+  background: var(--hint-purple-bg);
+  border: 1px solid var(--hint-purple-border);
+  border-radius: 8px;
+}
+
+.ai-message h4 {
+  margin: 0 0 8px;
+  color: var(--hint-purple);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-text {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.citation-chip {
+  display: inline-block;
+  min-width: 17px;
+  margin: 0 1px;
+  padding: 0 5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  color: #fff;
+  background: var(--hint-purple);
+  border-radius: 999px;
+  vertical-align: super;
+}
+
+.source-list {
+  margin: 12px 0 0;
+  padding: 10px 0 0;
+  list-style: none;
+  border-top: 1px solid var(--hint-purple-border);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.source-list li + li {
+  margin-top: 6px;
+}
+
+.source-list .num {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--hint-purple);
+}
+
+.source-list a {
+  color: var(--hint-purple);
+}
+
+.draft-label {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: var(--yellow);
+  color: #4a3d0c;
+}
+
+.modal-foot {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 32px 20px;
+}
+
+.close-button {
+  background: var(--blue-deep);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 22px;
+  font-family: var(--font-mail);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.close-button:active {
+  filter: brightness(0.9);
+}

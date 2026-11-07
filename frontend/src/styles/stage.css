@@ -1,0 +1,50 @@
+/*
+ * Everything is drawn on a fixed 1440x900 stage and scaled to the window with
+ * a CSS transform, so the pixel positions in docs/assets-guide.md stay exact
+ * at any window size.
+ */
+.stage-viewport {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #000;
+  overflow: hidden;
+}
+
+.stage {
+  position: relative;
+  width: 1440px;
+  height: 900px;
+  flex: 0 0 auto;
+  transform-origin: center center;
+  background: var(--office);
+}
+
+/* Absolute placement helper: children position themselves in stage pixels. */
+.at {
+  position: absolute;
+}
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(244, 239, 224, 0.25);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Honour a reduced-motion preference: keep the state, drop the animation. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 3s;
+  }
+}

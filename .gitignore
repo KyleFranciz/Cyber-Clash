@@ -6,3 +6,4 @@ backend/data/*.db
 frontend/node_modules/
 *.py[cod]
 .DS_Store
+frontend/dist/

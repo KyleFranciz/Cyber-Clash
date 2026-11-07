@@ -369,9 +369,9 @@ If the player is defeated: the ending plays (always skippable), then a review sh
 | Chat panel | Conversation with A.E.G.I.S. | Not designed | If time |
 | Correct answer | Short confirmation and reward | Not designed | **Yes** (can share the feedback card) |
 | Card selection | Ability cards | Designed | Later |
-| Camera view | Corridor feed, enemy, door, camera tabs | Designed | Later |
-| Blackout | Dim overlay on the dark office | Designed | Later |
-| Faceless encounter | Glitching bar, the figure | Designed | Later |
+| Camera view | Corridor feed, enemy, door, camera tabs | **Built** (CSS placeholder art, no camera-feed.png/enemy-walk.png yet) | Done |
+| Blackout | Dim overlay on the dark office | **Built** | Done |
+| Faceless encounter | Glitching bar, the figure | **Built** (plain CSS sprite + banner, no glitch bar or encounter head art yet) | Done |
 | Cyberpedia | Definitions | Not designed | Later |
 
 Only one modal state receives input at a time, so an email decision can't trigger the door or a card.
@@ -399,7 +399,7 @@ Only one modal state receives input at a time, so an email decision can't trigge
 
 1. After-answer **chat** with A.E.G.I.S.
 2. **Cards and ATB**, with Phishing Analysis as the way to open the modal
-3. The **survival layer**: door, camera view, one slow enemy, blackout, defeat and victory screens
+3. ~~The **survival layer**: door, camera view, one slow enemy, blackout, defeat and victory screens~~ **Built**: door and camera controls, the Faceless Figure's corridor walk, a closed-door counter, breach damage, and a blackout state all live in `store/game.ts` (balance in `balance.ts`), with a CSS-placeholder camera feed (`CameraPanel.tsx`), alert banner and blackout overlay. Still open: dedicated defeat/victory screens beyond the existing Shift Terminated / Night Complete results, and the real camera-feed/enemy-walk art.
 4. **Key sounds**: new-email chime, outcome tones, low-power alarm, blackout
 5. **Guided mode**
 6. Faceless encounter animation, dark and low-power visual variants
