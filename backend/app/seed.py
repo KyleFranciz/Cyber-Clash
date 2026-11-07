@@ -22,8 +22,54 @@ def load_challenges():
     return data
 
 
-if __name__ == "__main__":
+def seed_challenges():
+    # Step 1: Make sure the database tables exist
+    init_db()
+
+    # Step 2: Read the JSON challenge pack
     data = load_challenges()
 
-    print("Challenge pack:", data["pack_id"])
-    print("Number of challenges:", len(data["challenges"]))
+    # Step 3: Connect to the SQLite database
+    connection = get_connection()
+
+    try:
+        # Step 4: Loop through each challenge
+        for challenge in data["challenges"]:
+
+            # Insert the challenge into the database
+            connection.execute("""
+                INSERT OR REPLACE INTO challenges (
+                    id,
+                    pack_id,
+                    night,
+                    tier,
+                    type,
+                    is_malicious,
+                    best_action,
+                    data_json
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                challenge["id"],
+                data["pack_id"],
+                data["night"],
+                challenge["tier"],
+                challenge["type"],
+                int(challenge["is_malicious"]),
+                challenge["best_action"],
+                json.dumps(challenge)   # converts the challenge dictionary into a JSON string before storing it in the database.
+            ))
+
+        # Step 5: Save changes
+        connection.commit()
+
+    finally:
+        # Step 6: Close the database connection
+        connection.close()
+
+    print("Cybersecurity challenges inserted successfully!")
+
+
+if __name__ == "__main__":
+    seed_challenges()
+    
