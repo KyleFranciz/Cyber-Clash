@@ -80,7 +80,50 @@ def get_challenges():
     finally:
         connection.close()
 
-    
+
+def evaluate_answer(challenge_id, action):
+    # Connect to SQLite
+    connection = get_connection()
+
+    try:
+        # Retrieve the complete challenge, including private answers
+        row = connection.execute("""
+            SELECT data_json
+            FROM challenges
+            WHERE id = ?
+        """, (challenge_id,)).fetchone()
+
+        # The challenge was not found
+        if row is None:
+            return None
+
+        # Convert JSON text into a Python dictionary
+        challenge = json.loads(row["data_json"])
+
+        # Check whether the submitted action is valid
+        valid_actions = (
+            "report",
+            "verify_separately",
+            "no_action"
+        )
+
+        if action not in valid_actions:
+            raise ValueError("Invalid action")
+
+        # Find the result of the player's decision
+        outcome = challenge["action_outcome"][action]
+        feedback = challenge["action_feedback"][action]
+
+        return {
+            "challenge_id": challenge_id,
+            "action": action,
+            "outcome": outcome,
+            "feedback": feedback
+        }
+
+    finally:
+        connection.close()
+
 if __name__ == "__main__":
     challenges = get_challenges()
 
