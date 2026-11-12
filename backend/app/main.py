@@ -17,8 +17,35 @@ class AnswerRequest(BaseModel):
 
 # Retrieve all cybersecurity challenges
 @app.get("/api/challenges")
-def list_challenges():
-    return get_challenges()
+def list_challenges(
+    night: int = 1,
+    mode: Literal["guided", "standard", "challenge"] = "standard",
+    count: int = 6,
+    seed: str = ""
+):
+    # Just implementing night 1 content only
+    if night != 1:
+        raise HTTPExcerption(
+            status_code = 4
+            detail = "It is not night yet technician.........."
+        )
+
+    # retrieving the public challenges from SQLite
+    challenges = get_challenges()
+
+    if mode == "challenge":
+        # applying the existing Night 1 rules
+        challenges = [
+            c for c in challenges if c["tier"] >= 2
+        ]
+
+    #return the structure React expects
+    return {
+        "night" : night,
+        "mode": mode,
+        "challenges": challenges[:max(0, count)]
+    }
+    
 
 
 
