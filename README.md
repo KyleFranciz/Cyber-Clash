@@ -37,3 +37,35 @@ A first-person cybersecurity survival-horror game with cards and a timer. You wo
 1. **Spoiler rule.** Before the player answers, neither the browser nor the AI ever receives `is_malicious`, `best_action`, outcomes, feedback or clues. The server enforces this.
 2. **Sources come from the database.** The model writes `[P1]`-style ids. The server attaches the real sources. The model never writes a URL.
 3. **The AI is never required.** If it fails, show the authored feedback. Never show an error screen.
+
+## The architecture for Cyber Clash: Night Shift
+
+```mermaid
+flowchart TB
+    Player([Player])
+
+    subgraph Client["Frontend — React + TypeScript"]
+        UI["Game Interface"]
+        Email["Phishing Email Challenge"]
+        Feedback["Answer Feedback"]
+
+        UI --> Email
+        UI --> Feedback
+    end
+
+    subgraph Server["Backend — Python + FastAPI"]
+        API["API Routes"]
+        Challenge["Challenge and Answer Logic"]
+        Hints["A.E.G.I.S. Hint Assistance"]
+
+        API --> Challenge
+        API --> Hints
+    end
+
+    DB[("SQLite Database: Challenges, Attempts, Related Data")]
+
+    Player --> UI
+    UI <-->|HTTP / JSON| API
+    Challenge <--> DB
+    Hints -.->|Uses Challenge Context| Challenge
+```
