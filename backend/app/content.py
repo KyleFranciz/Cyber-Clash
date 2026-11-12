@@ -44,7 +44,20 @@ def get_challenge(challenge_id):
         # Always close the connection
         connection.close()
         
+def make_public_challenge(challenge):
+    # Making a copy so the stored data is not modiified
+    email = challenge["email"].copy()
 
+    #Matching the frontend's expected null value.
+    email["reply_to"] = email.get("reply_to") or None
+
+    return{
+        "id": challenge["id"],
+        "tier": challenge["tier],
+        "email": email,
+        "hint_basic": challenge["hints"]["basic"]
+    }
+        
 def get_challenges():
     #this function will retrieve all challenges from the database 
     # and return a list of dictionaries containing only the public information 
@@ -68,12 +81,7 @@ def get_challenges():
             challenge = json.loads(row["data_json"])
 
             # Only include public information
-            challenges.append({
-                "id": challenge["id"],
-                "type": challenge["type"],
-                "tier": challenge["tier"],
-                "email": challenge["email"]
-            })
+            challenges.append(make_public_challenge(challenge))
 
         return challenges
 
